@@ -1,56 +1,117 @@
-import React, { useState } from 'react';
-import { Plus, Search, Filter, MapPin, Clock, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Filter, MapPin, Clock, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { 
+  createRequest, 
+  getAvailableRequests, 
+  getRequestsByElder,
+  updateRequestStatus,
+  initializeDefaultRequests
+} from '../utils/requestStorage';
 
 const RequestsPage: React.FC = () => {
+  const { state } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Mock data - in real app, this would come from API
-  const requests = [
-    {
-      id: '1',
-      title: 'Grocery Shopping Help',
-      description: 'Need help with weekly grocery shopping at NTUC FairPrice.',
-      category: 'shopping',
-      location: 'Toa Payoh Central',
-      date: '2025-09-05',
-      time: '10:00 AM',
-      duration: '2 hours',
-      elderId: 'elder1',
-      elderName: 'Mrs. Lim',
-      status: 'open',
-      urgency: 'medium'
-    },
-    {
-      id: '2',
-      title: 'Coffee Chat Companion',
-      description: 'Looking for someone to have coffee and chat with at the void deck.',
-      category: 'wellbeing',
-      location: 'Ang Mo Kio',
-      date: '2025-09-06',
-      time: '3:00 PM',
-      duration: '1 hour',
-      elderId: 'elder2',
-      elderName: 'Mr. Tan',
-      status: 'open',
-      urgency: 'low'
-    },
-    {
-      id: '3',
-      title: 'Doctor Appointment Escort',
-      description: 'Need someone to accompany me to my doctor appointment at the polyclinic.',
-      category: 'general',
-      location: 'Bedok Polyclinic',
-      date: '2025-09-07',
-      time: '9:00 AM',
-      duration: '3 hours',
-      elderId: 'elder3',
-      elderName: 'Mrs. Wong',
-      status: 'matched',
-      urgency: 'high'
+  // Form state for creating new request
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: 'general' as 'general' | 'household' | 'wellbeing' | 'shopping',
+    scheduledDate: '',
+    scheduledTime: '',
+    duration: '60',
+    address: '',
+    postalCode: '',
+    urgency: 'medium' as 'low' | 'medium' | 'high'
+  });
+
+  // Load requests on component mount
+  useEffect(() => {
+    initializeDefaultRequests();
+    loadRequests();
+  }, [state.user]);
+
+  const loadRequests = () => {
+    if (!state.user) return;
+    
+    if (state.user.role === 'elder') {
+      // Elders see only their own requests
+      const myRequests = getRequestsByElder(state.user.id);
+      setRequests(myRequests);
+    } else {
+      // Volunteers see all available requests (open status)
+      const availableRequests = getAvailableRequests();
+      setRequests(availableRequests);
     }
-  ];
+  };
+
+  const handleCreateRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!state.user) return;
+
+    setIsLoading(true);
+    
+    try {
+      const scheduledDateTime = new Date(`${formData.scheduledDate}T${formData.scheduledTime}`);
+      
+      const result = createRequest({
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        scheduledDate: scheduledDateTime,
+        duration: parseInt(formData.duration),
+        location: {
+          address: formData.address,
+          postalCode: formData.postalCode
+        },
+        urgency: formData.urgency,
+        elderId: state.user.id
+      });
+
+      if (result.success) {
+        // Reset form
+        setFormData({
+          title: '',
+          description: '',
+          category: 'general',
+          scheduledDate: '',
+          scheduledTime: '',
+          duration: '60',
+          address: '',
+          postalCode: '',
+          urgency: 'medium'
+        });
+        
+        setShowCreateModal(false);
+        loadRequests(); // Reload requests
+      } else {
+        alert(result.error || 'Failed to create request');
+      }
+    } catch (error) {
+      console.error('Error creating request:', error);
+      alert('Failed to create request');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOfferHelp = async (requestId: string) => {
+    if (!state.user) return;
+    
+    const result = updateRequestStatus(requestId, 'matched', state.user.id);
+    if (result.success) {
+      loadRequests(); // Reload to reflect changes
+      alert('You have successfully offered to help with this request!');
+    } else {
+      alert(result.error || 'Failed to offer help');
+    }
+  };
+
 
   const categories = [
     { value: 'all', label: 'All Categories' },
@@ -71,16 +132,25 @@ const RequestsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Assistance Requests</h1>
-          <p className="text-gray-600">Browse and manage assistance requests in your community</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {state.user?.role === 'elder' ? 'My Requests' : 'Available Requests'}
+          </h1>
+          <p className="text-gray-600">
+            {state.user?.role === 'elder' 
+              ? 'Manage your assistance requests' 
+              : 'Browse and help with community requests'
+            }
+          </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Request</span>
-        </button>
+        {state.user?.role === 'elder' && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn-primary flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Request</span>
+          </button>
+        )}
       </div>
 
       {/* Search and Filter */}
@@ -135,16 +205,19 @@ const RequestsPage: React.FC = () => {
                 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                   <div className="flex items-center">
-                    <User className="w-4 h-4 mr-1" />
-                    <span>{request.elderName}</span>
-                  </div>
-                  <div className="flex items-center">
                     <MapPin className="w-4 h-4 mr-1" />
-                    <span>{request.location}</span>
+                    <span>{request.location?.address || request.location}</span>
                   </div>
                   <div className="flex items-center">
                     <Clock className="w-4 h-4 mr-1" />
-                    <span>{request.date} at {request.time} ({request.duration})</span>
+                    <span>
+                      {request.scheduledDate ? 
+                        new Date(request.scheduledDate).toLocaleDateString() + ' at ' + 
+                        new Date(request.scheduledDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) :
+                        `${request.date} at ${request.time}`
+                      } 
+                      ({request.duration ? Math.floor(request.duration / 60) + 'h ' + (request.duration % 60) + 'm' : request.duration})
+                    </span>
                   </div>
                 </div>
               </div>
@@ -158,8 +231,11 @@ const RequestsPage: React.FC = () => {
                   {request.status}
                 </span>
                 
-                {request.status === 'open' && (
-                  <button className="btn-primary text-sm px-4 py-2">
+                {state.user?.role === 'volunteer' && request.status === 'open' && (
+                  <button 
+                    onClick={() => handleOfferHelp(request.id)}
+                    className="btn-primary text-sm px-4 py-2"
+                  >
                     Offer Help
                   </button>
                 )}
@@ -189,16 +265,28 @@ const RequestsPage: React.FC = () => {
 
       {/* Create Request Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Create New Request</h3>
-            <form className="space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Create New Request</h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateRequest} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Request Title
+                  Request Title *
                 </label>
                 <input
                   type="text"
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="What do you need help with?"
                 />
@@ -206,40 +294,142 @@ const RequestsPage: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category
+                  Category *
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                  <option>General Assistance</option>
-                  <option>Household Chores</option>
-                  <option>Shopping</option>
-                  <option>Wellbeing</option>
+                <select 
+                  required
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value as any})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="general">General Assistance</option>
+                  <option value="household">Household Chores</option>
+                  <option value="shopping">Shopping</option>
+                  <option value="wellbeing">Wellbeing</option>
                 </select>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                  Description *
                 </label>
                 <textarea
+                  required
                   rows={3}
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Please provide more details..."
+                  placeholder="Please provide more details about what you need help with..."
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.scheduledDate}
+                    onChange={(e) => setFormData({...formData, scheduledDate: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Time *
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={formData.scheduledTime}
+                    onChange={(e) => setFormData({...formData, scheduledTime: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration (minutes) *
+                </label>
+                <select 
+                  required
+                  value={formData.duration}
+                  onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="30">30 minutes</option>
+                  <option value="60">1 hour</option>
+                  <option value="90">1.5 hours</option>
+                  <option value="120">2 hours</option>
+                  <option value="180">3 hours</option>
+                  <option value="240">4 hours</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Address *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.address}
+                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Where do you need help?"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Postal Code *
+                </label>
+                <input
+                  type="text"
+                  required
+                  pattern="[0-9]{6}"
+                  value={formData.postalCode}
+                  onChange={(e) => setFormData({...formData, postalCode: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="123456"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Urgency
+                </label>
+                <select 
+                  value={formData.urgency}
+                  onChange={(e) => setFormData({...formData, urgency: e.target.value as any})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="low">Low Priority</option>
+                  <option value="medium">Medium Priority</option>
+                  <option value="high">High Priority</option>
+                </select>
+              </div>
               
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end space-x-2 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
                   className="btn-secondary"
+                  disabled={isLoading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="btn-primary"
+                  disabled={isLoading}
                 >
-                  Create Request
+                  {isLoading ? 'Creating...' : 'Create Request'}
                 </button>
               </div>
             </form>
