@@ -1,20 +1,43 @@
 import React, { useState } from 'react';
 import { User, Mail, Phone, MapPin, Languages, Edit3, Save, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const ProfilePage: React.FC = () => {
+  const { state } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    name: 'John Tan',
-    email: 'john.tan@example.com',
-    phone: '+65 9123 4567',
-    address: 'Toa Payoh Central, Singapore',
-    bio: 'Retired teacher who loves reading and gardening. Looking forward to connecting with volunteers for occasional help with errands.',
-    languages: ['English', 'Mandarin'],
-    age: 68,
-    emergencyContact: {
-      name: 'Mary Tan',
-      relationship: 'Daughter',
-      phone: '+65 9876 5432'
+  
+  // Initialize profile from authenticated user or default values
+  const [profile, setProfile] = useState(() => {
+    if (state.user?.role === 'elder') {
+      return {
+        name: state.user.name || 'Elder User',
+        email: state.user.email || '',
+        phone: '+65 9123 4567',
+        address: 'Toa Payoh Central, Singapore',
+        bio: 'Retired teacher who loves reading and gardening. Looking forward to connecting with volunteers for occasional help with errands.',
+        languages: ['English', 'Mandarin'],
+        age: 68 as number | undefined,
+        emergencyContact: {
+          name: 'Family Member',
+          relationship: 'Daughter',
+          phone: '+65 9876 5432'
+        },
+        servicesOffered: undefined as string[] | undefined,
+        availability: undefined as string | undefined
+      };
+    } else {
+      return {
+        name: state.user?.name || 'Volunteer User',
+        email: state.user?.email || '',
+        phone: '+65 8765 4321',
+        address: 'Ang Mo Kio, Singapore',
+        bio: 'Community volunteer passionate about helping elders. Available for various assistance tasks.',
+        languages: ['English', 'Mandarin', 'Malay'],
+        servicesOffered: ['Shopping', 'Transportation', 'Technology Help'],
+        availability: 'Weekends and evenings',
+        age: undefined as number | undefined,
+        emergencyContact: undefined as { name: string; relationship: string; phone: string; } | undefined
+      };
     }
   });
 
@@ -73,7 +96,9 @@ const ProfilePage: React.FC = () => {
               </button>
             ) : null}
             <h3 className="text-xl font-semibold text-gray-900 mb-2">{profile.name}</h3>
-            <p className="text-gray-600 mb-4">Elder Member</p>
+            <p className="text-gray-600 mb-4">
+              {state.user?.role === 'elder' ? 'Elder Member' : 'Volunteer Member'}
+            </p>
             <div className="text-left space-y-2">
               <div className="flex items-center text-gray-600">
                 <Mail className="w-4 h-4 mr-2" />
@@ -113,21 +138,23 @@ const ProfilePage: React.FC = () => {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Age
-                </label>
-                {isEditing ? (
-                  <input
-                    type="number"
-                    value={profile.age}
-                    onChange={(e) => setProfile({ ...profile, age: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                ) : (
-                  <p className="text-gray-900">{profile.age}</p>
-                )}
-              </div>
+              {state.user?.role === 'elder' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Age
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      value={profile.age || ''}
+                      onChange={(e) => setProfile({ ...profile, age: parseInt(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile.age}</p>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -210,70 +237,111 @@ const ProfilePage: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* Volunteer-specific fields */}
+            {state.user?.role === 'volunteer' && (
+              <>
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Services Offered
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.servicesOffered?.map((service) => (
+                      <span
+                        key={service}
+                        className="px-2 py-1 bg-green-100 text-green-800 text-sm rounded-full"
+                      >
+                        {service}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Availability
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={profile.availability || ''}
+                      onChange={(e) => setProfile({ ...profile, availability: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="e.g., Weekends and evenings"
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile.availability}</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="card">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Emergency Contact</h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name
-                </label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={profile.emergencyContact.name}
-                    onChange={(e) => setProfile({
-                      ...profile,
-                      emergencyContact: { ...profile.emergencyContact, name: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                ) : (
-                  <p className="text-gray-900">{profile.emergencyContact.name}</p>
-                )}
-              </div>
+          {/* Emergency Contact - only for Elders */}
+          {state.user?.role === 'elder' && profile.emergencyContact && (
+            <div className="card">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Emergency Contact</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={profile.emergencyContact?.name || ''}
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        emergencyContact: profile.emergencyContact ? { ...profile.emergencyContact, name: e.target.value } : { name: e.target.value, relationship: '', phone: '' }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile.emergencyContact?.name}</p>
+                  )}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Relationship
-                </label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={profile.emergencyContact.relationship}
-                    onChange={(e) => setProfile({
-                      ...profile,
-                      emergencyContact: { ...profile.emergencyContact, relationship: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                ) : (
-                  <p className="text-gray-900">{profile.emergencyContact.relationship}</p>
-                )}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Relationship
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={profile.emergencyContact?.relationship || ''}
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        emergencyContact: profile.emergencyContact ? { ...profile.emergencyContact, relationship: e.target.value } : { name: '', relationship: e.target.value, phone: '' }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile.emergencyContact?.relationship}</p>
+                  )}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
-                </label>
-                {isEditing ? (
-                  <input
-                    type="tel"
-                    value={profile.emergencyContact.phone}
-                    onChange={(e) => setProfile({
-                      ...profile,
-                      emergencyContact: { ...profile.emergencyContact, phone: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                ) : (
-                  <p className="text-gray-900">{profile.emergencyContact.phone}</p>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={profile.emergencyContact?.phone || ''}
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        emergencyContact: profile.emergencyContact ? { ...profile.emergencyContact, phone: e.target.value } : { name: '', relationship: '', phone: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile.emergencyContact?.phone}</p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

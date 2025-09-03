@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { User, Elder, Volunteer } from '../types';
+import { authenticateUser, registerUser, initializeDefaultUsers } from '../utils/userStorage';
 
 interface AuthState {
   user: User | null;
@@ -73,9 +74,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Check for existing authentication on mount
+  // Check for existing authentication on mount and initialize default users
   useEffect(() => {
     const checkAuth = () => {
+      // Initialize default users if none exist
+      initializeDefaultUsers();
+
       const savedUser = localStorage.getItem('kampong_connect_user');
       if (savedUser) {
         try {
@@ -90,26 +94,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     checkAuth();
   }, []);
 
-  const login = async (email: string, _password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     dispatch({ type: 'LOGIN_START' });
 
     try {
-      // Mock authentication - in real app, this would be an API call
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Mock user data based on email
-      const mockUser: User = {
-        id: 'user_' + Math.random().toString(36).substr(2, 9),
-        email,
-        name: email.includes('elder') ? 'John Elder' : 'Jane Volunteer',
-        role: email.includes('elder') ? 'elder' : 'volunteer',
-        createdAt: new Date(),
-        isVerified: true,
-      };
-
-      localStorage.setItem('kampong_connect_user', JSON.stringify(mockUser));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: mockUser });
-      return true;
+      // Authenticate user with persistent storage
+      const authResult = authenticateUser(email, password);
+      
+      if (authResult.success && authResult.user) {
+        localStorage.setItem('kampong_connect_user', JSON.stringify(authResult.user));
+        dispatch({ type: 'LOGIN_SUCCESS', payload: authResult.user });
+        return true;
+      } else {
+        dispatch({ type: 'LOGIN_FAILURE' });
+        return false;
+      }
     } catch (error) {
       dispatch({ type: 'LOGIN_FAILURE' });
       return false;
@@ -120,21 +122,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: 'LOGIN_START' });
 
     try {
-      // Mock registration - in real app, this would be an API call
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const newUser: User = {
-        id: 'user_' + Math.random().toString(36).substr(2, 9),
-        email: userData.email,
+      // Register user with persistent storage
+      const registerResult = registerUser({
         name: userData.name,
+        email: userData.email,
+        password: userData.password,
         role: userData.role,
-        createdAt: new Date(),
-        isVerified: false,
-      };
+      });
 
-      localStorage.setItem('kampong_connect_user', JSON.stringify(newUser));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: newUser });
-      return true;
+      if (registerResult.success && registerResult.user) {
+        localStorage.setItem('kampong_connect_user', JSON.stringify(registerResult.user));
+        dispatch({ type: 'LOGIN_SUCCESS', payload: registerResult.user });
+        return true;
+      } else {
+        dispatch({ type: 'LOGIN_FAILURE' });
+        return false;
+      }
     } catch (error) {
       dispatch({ type: 'LOGIN_FAILURE' });
       return false;
