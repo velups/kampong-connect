@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Clock, Users, MessageCircle, Star } from 'lucide-react';
+import { Clock, Users, MessageCircle, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const DashboardPage: React.FC = () => {
@@ -39,12 +39,6 @@ const DashboardPage: React.FC = () => {
             Welcome back, {state.user?.name}! Here's {userRole === 'elder' ? 'your activity overview' : 'what\'s happening in your community'}.
           </p>
         </div>
-        {userRole === 'elder' && (
-          <button className="btn-primary flex items-center space-x-2">
-            <Plus className="w-4 h-4" />
-            <span>New Request</span>
-          </button>
-        )}
       </div>
 
       {/* Stats Cards */}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Menu, User, LogOut, Globe } from 'lucide-react';
+import { Heart, Menu, X, User, LogOut, Globe } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -8,6 +8,7 @@ const Header: React.FC = () => {
   const { state, logout } = useAuth();
   const { currentLanguage, setLanguage, t } = useLanguage();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -98,11 +99,64 @@ const Header: React.FC = () => {
               </>
             )}
             
-            <button className="md:hidden">
-              <Menu className="w-6 h-6" />
+            <button 
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              aria-label="Toggle menu"
+            >
+              {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
+        
+        {/* Mobile Navigation Menu */}
+        {showMobileMenu && state.isAuthenticated && (
+          <div className="md:hidden bg-white border-t">
+            <nav className="px-4 py-2 space-y-2">
+              <Link 
+                to="/dashboard" 
+                className="block px-3 py-2 text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                {t('nav.dashboard')}
+              </Link>
+              <Link 
+                to="/requests" 
+                className="block px-3 py-2 text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                {t('nav.requests')}
+              </Link>
+              <Link 
+                to="/messages" 
+                className="block px-3 py-2 text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                {t('nav.messages')}
+              </Link>
+              <Link 
+                to="/profile" 
+                className="block px-3 py-2 text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <div className="flex items-center space-x-2">
+                  <User className="w-4 h-4" />
+                  <span>{t('nav.profile')}</span>
+                </div>
+              </Link>
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setShowMobileMenu(false);
+                }}
+                className="w-full text-left px-3 py-2 text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors flex items-center space-x-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );
