@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, Users, MessageCircle, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getRequestStats, getRequestsByElder, getAvailableRequests, initializeDefaultRequests } from '../utils/requestStorage';
 
 const DashboardPage: React.FC = () => {
   const { state } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const userRole = state.user?.role || 'elder';
   const [stats, setStats] = useState({
@@ -45,9 +47,9 @@ const DashboardPage: React.FC = () => {
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('dashboard.title')}</h1>
           <p className="text-gray-600">
-            Welcome back, {state.user?.name}! Here's {userRole === 'elder' ? 'your activity overview' : 'what\'s happening in your community'}.
+            Welcome back, {state.user?.name}! Here's {userRole === 'elder' ? t('dashboard.welcomeElder') : t('dashboard.welcomeVolunteer')}.
           </p>
         </div>
       </div>
@@ -58,7 +60,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">
-                {userRole === 'elder' ? 'My Requests' : 'Available Requests'}
+                {userRole === 'elder' ? t('dashboard.myRequests') : t('dashboard.availableRequests')}
               </p>
               <p className="text-2xl font-bold text-gray-900">{stats.activeRequests}</p>
             </div>
@@ -70,7 +72,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">
-                {userRole === 'elder' ? 'Tasks Completed' : 'People Helped'}
+                {userRole === 'elder' ? t('dashboard.tasksCompleted') : t('dashboard.peopleHelped')}
               </p>
               <p className="text-2xl font-bold text-gray-900">{stats.completedTasks}</p>
             </div>
@@ -81,7 +83,7 @@ const DashboardPage: React.FC = () => {
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">New Messages</p>
+              <p className="text-sm text-gray-600">{t('dashboard.newMessages')}</p>
               <p className="text-2xl font-bold text-gray-900">{stats.messages}</p>
             </div>
             <MessageCircle className="w-8 h-8 text-blue-600" />
@@ -91,7 +93,7 @@ const DashboardPage: React.FC = () => {
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Your Rating</p>
+              <p className="text-sm text-gray-600">{t('dashboard.yourRating')}</p>
               <p className="text-2xl font-bold text-gray-900">{stats.rating}</p>
             </div>
             <Star className="w-8 h-8 text-yellow-500" />
@@ -103,7 +105,7 @@ const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="card">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">
-            {userRole === 'elder' ? 'My Recent Requests' : 'Recent Community Requests'}
+            {userRole === 'elder' ? t('dashboard.myRecentRequests') : t('dashboard.recentCommunityRequests')}
           </h3>
           <div className="space-y-4">
             {recentRequests.map((request) => (
@@ -136,7 +138,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         <div className="card">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.quickActions')}</h3>
           <div className="space-y-3">
             {userRole === 'elder' ? (
               <>
@@ -144,22 +146,22 @@ const DashboardPage: React.FC = () => {
                   onClick={() => navigate('/requests')}
                   className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <h4 className="font-medium text-gray-900">Request Help</h4>
-                  <p className="text-sm text-gray-600">Post a new assistance request</p>
+                  <h4 className="font-medium text-gray-900">{t('dashboard.requestHelp')}</h4>
+                  <p className="text-sm text-gray-600">{t('dashboard.requestHelpDesc')}</p>
                 </button>
                 <button 
                   onClick={() => navigate('/messages')}
                   className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <h4 className="font-medium text-gray-900">View Messages</h4>
-                  <p className="text-sm text-gray-600">Chat with volunteers</p>
+                  <h4 className="font-medium text-gray-900">{t('dashboard.viewMessages')}</h4>
+                  <p className="text-sm text-gray-600">{t('dashboard.viewMessagesDesc')}</p>
                 </button>
                 <button 
                   onClick={() => navigate('/profile')}
                   className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <h4 className="font-medium text-gray-900">Update Profile</h4>
-                  <p className="text-sm text-gray-600">Manage your preferences</p>
+                  <h4 className="font-medium text-gray-900">{t('dashboard.updateProfile')}</h4>
+                  <p className="text-sm text-gray-600">{t('dashboard.updateProfileDesc')}</p>
                 </button>
               </>
             ) : (
@@ -168,22 +170,22 @@ const DashboardPage: React.FC = () => {
                   onClick={() => navigate('/requests')}
                   className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <h4 className="font-medium text-gray-900">Browse Requests</h4>
-                  <p className="text-sm text-gray-600">Find ways to help nearby</p>
+                  <h4 className="font-medium text-gray-900">{t('dashboard.browseRequests')}</h4>
+                  <p className="text-sm text-gray-600">{t('dashboard.browseRequestsDesc')}</p>
                 </button>
                 <button 
                   onClick={() => navigate('/requests')}
                   className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <h4 className="font-medium text-gray-900">My Commitments</h4>
-                  <p className="text-sm text-gray-600">View accepted requests</p>
+                  <h4 className="font-medium text-gray-900">{t('dashboard.myCommitments')}</h4>
+                  <p className="text-sm text-gray-600">{t('dashboard.myCommitmentsDesc')}</p>
                 </button>
                 <button 
                   onClick={() => navigate('/profile')}
                   className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <h4 className="font-medium text-gray-900">Update Availability</h4>
-                  <p className="text-sm text-gray-600">Manage your schedule</p>
+                  <h4 className="font-medium text-gray-900">{t('dashboard.updateAvailability')}</h4>
+                  <p className="text-sm text-gray-600">{t('dashboard.updateAvailabilityDesc')}</p>
                 </button>
               </>
             )}

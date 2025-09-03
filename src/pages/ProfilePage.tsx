@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { User, Mail, Phone, MapPin, Languages, Edit3, Save, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const ProfilePage: React.FC = () => {
   const { state } = useAuth();
+  const { t } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
   
   // Initialize profile from authenticated user or default values
@@ -97,7 +99,7 @@ const ProfilePage: React.FC = () => {
             ) : null}
             <h3 className="text-xl font-semibold text-gray-900 mb-2">{profile.name}</h3>
             <p className="text-gray-600 mb-4">
-              {state.user?.role === 'elder' ? 'Elder Member' : 'Volunteer Member'}
+              {state.user?.role === 'elder' ? t('profile.elderMember') : t('profile.volunteerMember')}
             </p>
             <div className="text-left space-y-2">
               <div className="flex items-center text-gray-600">

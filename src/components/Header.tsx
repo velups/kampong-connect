@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Menu, X, User, LogOut, Globe } from 'lucide-react';
+import { Heart, Menu, X, User, LogOut, Globe, Type } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 
 const Header: React.FC = () => {
   const { state, logout } = useAuth();
   const { currentLanguage, setLanguage, t } = useLanguage();
+  const { settings, toggleLargeText } = useAccessibility();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
@@ -52,10 +54,23 @@ const Header: React.FC = () => {
             <button
               onClick={toggleLanguage}
               className="flex items-center space-x-1 text-gray-600 hover:text-primary-600 transition-colors"
-              title="Switch Language"
+              title={t('accessibility.switchLanguage')}
             >
               <Globe className="w-4 h-4" />
               <span className="text-sm">{currentLanguage === 'en' ? '中文' : 'EN'}</span>
+            </button>
+            
+            <button
+              onClick={toggleLargeText}
+              className={`flex items-center space-x-1 transition-colors ${
+                settings.largeText 
+                  ? 'text-primary-600 hover:text-primary-700' 
+                  : 'text-gray-600 hover:text-primary-600'
+              }`}
+              title={t('accessibility.toggleFontSize')}
+            >
+              <Type className="w-4 h-4" />
+              <span className="text-sm">{settings.largeText ? 'A' : 'A+'}</span>
             </button>
             
             {state.isAuthenticated ? (

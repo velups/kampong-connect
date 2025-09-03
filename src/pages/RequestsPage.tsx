@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, MapPin, Clock, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { 
   createRequest, 
   getAvailableRequests, 
@@ -11,6 +12,7 @@ import {
 
 const RequestsPage: React.FC = () => {
   const { state } = useAuth();
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -114,11 +116,11 @@ const RequestsPage: React.FC = () => {
 
 
   const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'general', label: 'General Assistance' },
-    { value: 'household', label: 'Household Chores' },
-    { value: 'shopping', label: 'Shopping' },
-    { value: 'wellbeing', label: 'Wellbeing' }
+    { value: 'all', label: t('requests.allCategories') },
+    { value: 'general', label: t('category.general') },
+    { value: 'household', label: t('category.household') },
+    { value: 'shopping', label: t('category.shopping') },
+    { value: 'wellbeing', label: t('category.wellbeing') }
   ];
 
   const filteredRequests = requests.filter(request => {
@@ -133,12 +135,12 @@ const RequestsPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            {state.user?.role === 'elder' ? 'My Requests' : 'Available Requests'}
+            {state.user?.role === 'elder' ? t('requests.myRequests') : t('requests.availableRequests')}
           </h1>
           <p className="text-gray-600">
             {state.user?.role === 'elder' 
-              ? 'Manage your assistance requests' 
-              : 'Browse and help with community requests'
+              ? t('requests.manageRequests')
+              : t('requests.browseHelp')
             }
           </p>
         </div>
@@ -148,7 +150,7 @@ const RequestsPage: React.FC = () => {
             className="btn-primary flex items-center space-x-2"
           >
             <Plus className="w-4 h-4" />
-            <span>New Request</span>
+            <span>{t('requests.newRequest')}</span>
           </button>
         )}
       </div>
@@ -161,7 +163,7 @@ const RequestsPage: React.FC = () => {
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search requests..."
+                placeholder={t('requests.searchRequests')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -236,13 +238,13 @@ const RequestsPage: React.FC = () => {
                     onClick={() => handleOfferHelp(request.id)}
                     className="btn-primary text-sm px-4 py-2"
                   >
-                    Offer Help
+{t('requests.offerHelp')}
                   </button>
                 )}
                 
                 {request.status === 'matched' && (
                   <button className="btn-secondary text-sm px-4 py-2">
-                    View Details
+{t('requests.viewDetails')}
                   </button>
                 )}
               </div>
@@ -268,7 +270,7 @@ const RequestsPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Create New Request</h3>
+              <h3 className="text-lg font-semibold">{t('requests.createTitle')}</h3>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="p-1 hover:bg-gray-100 rounded"
@@ -280,7 +282,7 @@ const RequestsPage: React.FC = () => {
             <form onSubmit={handleCreateRequest} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Request Title *
+{t('requests.requestTitle')} *
                 </label>
                 <input
                   type="text"
@@ -288,13 +290,13 @@ const RequestsPage: React.FC = () => {
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="What do you need help with?"
+                  placeholder={t('requests.requestTitlePlaceholder')}
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category *
+{t('requests.category')} *
                 </label>
                 <select 
                   required
@@ -422,14 +424,14 @@ const RequestsPage: React.FC = () => {
                   className="btn-secondary"
                   disabled={isLoading}
                 >
-                  Cancel
+{t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn-primary"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Creating...' : 'Create Request'}
+{isLoading ? t('requests.creating') : t('requests.createRequest')}
                 </button>
               </div>
             </form>
