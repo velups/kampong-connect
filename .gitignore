@@ -10,7 +10,7 @@ cypress/screenshots/
 
 # Production
 /build
-/dist
+# /dist  # Commented out to allow committing dist for GitHub Pages
 
 # Environment variables
 .env
